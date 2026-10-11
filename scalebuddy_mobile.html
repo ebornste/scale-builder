@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ScaleBuddy">
+<title>ScaleBuddy</title>
+<style>
+:root{--bg:#faf9f5;--fg:#1f1e1d;--muted:#6b6a65;--line:#8a8880;--card:#fff;--border:#d9d7cf;--inlay:#e4e2da;--accent:#1f4fb8;--accent-bg:#e6effc;--root:#D85A30}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1b1a;--fg:#ecebe6;--muted:#a5a39b;--line:#7d7b74;--card:#262523;--border:#45443f;--inlay:#34332f;--accent:#a8c4ff;--accent-bg:#26324a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
+main{max-width:1240px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px;font-size:14px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0;font-size:13px;color:var(--muted)}
+.row .lab{min-width:130px}
+button,select{font:inherit;font-size:13px;padding:5px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--fg);cursor:pointer}
+button:hover,select:hover{border-color:var(--line)}
+button.on{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
+.keys button{min-width:44px}
+.hd{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:0 0 6px}
+.hd b{font-size:16px;font-weight:600}
+.hd .info{color:var(--muted);font-size:13px}
+.hd .rm{margin-left:auto}
+.chip{width:12px;height:12px;border-radius:50%;display:inline-block}
+.board{display:block;width:100%;height:auto}
+.dot{transition:opacity .2s}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-left:auto}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.hint{font-size:12px;color:var(--muted);margin-top:10px}
+kbd{font:11px ui-monospace,Menlo,monospace;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 4px}
+#add{width:100%;padding:10px;border-style:dashed;color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:0 0 16px}
+.tabs button{border:none;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 14px;font-size:14px;color:var(--muted)}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--accent);background:none}
+.chords button{min-width:64px;line-height:1.25}
+.chords button small{display:block;font-size:11px;color:var(--muted)}
+.chords button.on small{color:var(--accent)}
+html{-webkit-text-size-adjust:100%}
+main{padding:16px max(12px,env(safe-area-inset-right)) 40px max(12px,env(safe-area-inset-left))}
+.panel{padding:12px}
+.row{flex-direction:column;align-items:stretch;gap:5px;margin:12px 0}
+.row .lab{min-width:0;font-size:12px}
+.row>span:not(.lab):not(.legend){display:flex;flex-wrap:wrap;gap:6px}
+button{min-height:38px;padding:6px 12px;font-size:14px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+select{font-size:16px;min-height:40px;width:100%}
+.hd select{width:auto}
+.keys button{min-width:0;flex:1 0 calc(16.66% - 6px);padding:6px 2px}
+.legend{margin-left:0;margin-top:4px}
+.scroller{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px}
+.board{max-width:none}
+details.more{border-top:1px solid var(--border);margin-top:8px}
+details.more summary{cursor:pointer;font-size:14px;color:var(--accent);padding:10px 0 2px}
+.tabs button{flex:1;font-size:15px}
+</style>
+</head>
+<body>
+<main>
+  <h1>ScaleBuddy</h1>
+  <p class="sub">Scales, modes and triads across the whole neck, in standard tuning.</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <section id="tab-triads">
+  <div class="panel">
+    <div class="row keys"><span class="lab">Key</span><span id="tkeys"></span></div>
+    <div class="row chords"><span class="lab">Chord</span><span id="tchords"></span></div>
+    <div class="row"><span class="lab">String set</span><span id="tsets"></span></div>
+    <div class="row"><span class="lab">Inversion</span><span id="tinvs"></span></div>
+    <div class="row"><span class="lab">CAGED shape</span><span id="tcaged"></span></div>
+    <details class="more"><summary>More options</summary>
+    <div class="row"><span class="lab">Scale</span><select id="tscale"></select></div>
+    <div class="row"><span class="lab">Scale overlay</span><span id="tovl"></span></div>
+    <div class="row"><span class="lab">Shape labels</span><span id="ttags"></span></div>
+    <div class="row"><span class="lab">Labels</span><span id="tlbls"></span></div>
+    <div class="row"><span class="lab">Frets</span><span id="tfretsel"></span></div>
+    </details>
+    <div class="row"><span class="legend"><span><i style="background:var(--root)"></i>Root</span><span><i style="background:#185FA5"></i>3rd</span><span><i style="background:#0F6E56"></i>5th</span><span><i style="background:#F2C230"></i>Other scale notes</span><span><i style="background:var(--inlay);border:1px solid var(--line)"></i>Other chord tones</span></span>
+    </div>
+  </div>
+  <div id="triboards"></div>
+  <div class="hint">Each triad is three notes on three neighbouring strings, joined by a line. Root position has the root in the bass, 1st inversion has the 3rd in the bass, 2nd inversion has the 5th in the bass. Each triad is labelled with the CAGED chord shape it sits inside; a triad on the border between two shapes gets both names (e.g. C/A).<br>Swipe a fretboard sideways to move along the neck; all fretboards scroll together. Turn your phone sideways for a bigger view.</div>
+  </section>
+
+  <section id="tab-scales">
+  <div class="panel">
+    <div class="row keys"><span class="lab">Key (all rows)</span><span id="keys"></span></div>
+    <div class="row"><span class="lab">Highlight shape</span><span id="shapes"></span></div>
+    <details class="more"><summary>More options</summary>
+    <div class="row"><span class="lab">Match shapes by</span><span id="modes"></span></div>
+    <div class="row"><span class="lab">Labels</span><span id="lbls"></span></div>
+    <div class="row"><span class="lab">Compare</span><span id="diff"></span></div>
+    <div class="row"><span class="lab">Frets</span><span id="fretsel"></span></div>
+    </details>
+    <div class="row"><span class="legend"><span><i style="background:var(--root)"></i>Root</span><span><i style="border:2px dashed var(--fg);background:none"></i>Not in row 1</span></span>
+    </div>
+  </div>
+
+  <div id="rows"></div>
+  <button id="add">+ Add a scale row</button>
+
+  <div class="hint">Shapes: pentatonics use 2 notes per string (5 shapes), 7-note scales use 3 notes per string (7 shapes). Shape 1 starts on the root on the low E string.<br>Swipe a fretboard sideways to move along the neck; all fretboards scroll together. Turn your phone sideways for a bigger view.</div>
+  </section>
+</main>
+
+<script>
+const OPEN=[64,59,55,50,45,40], SN=['e','B','G','D','A','E'];
+const LET=['C','D','E','F','G','A','B'], LPC=[0,2,4,5,7,9,11], MAJ=[0,2,4,5,7,9,11];
+const KEYS=['C','C♯/D♭','D','E♭','E','F','F♯/G♭','G','A♭','A','B♭','B'];
+const ROWCOL=['#0F6E56','#534AB7','#185FA5'];
+const MODES=['Ionian','Dorian','Phrygian','Lydian','Mixolydian','Aeolian','Locrian'];
+const rot=(a,k)=>a.slice(k).concat(a.slice(0,k)).map(x=>(x-a[k]+12)%12);
+const SCALES={
+  majp:{name:'Major pentatonic',iv:[0,2,4,7,9],lt:[0,1,2,4,5],grp:'Pentatonic'},
+  minp:{name:'Minor pentatonic',iv:[0,3,5,7,10],lt:[0,2,3,4,6],grp:'Pentatonic'},
+};
+MODES.forEach((m,i)=>SCALES['m'+i]={name:m==='Ionian'?'Major (Ionian)':m==='Aeolian'?'Natural minor (Aeolian)':m,iv:rot(MAJ,i),lt:[0,1,2,3,4,5,6],grp:'Major scale & modes',mode:i});
+SCALES.harm={name:'Harmonic minor',iv:[0,2,3,5,7,8,11],lt:[0,1,2,3,4,5,6],grp:'Other minor'};
+SCALES.mel={name:'Melodic minor',iv:[0,2,3,5,7,9,11],lt:[0,1,2,3,4,5,6],grp:'Other minor'};
+
+let st={tab:'scales',rows:[{key:9,sc:'majp'},{key:9,sc:'minp'}],shape:-1,mode:'pos',lbl:'n',frets:22,diff:false,
+  tri:{key:9,sc:'m0',chord:0,set:-1,inv:-1,lbl:'n',caged:'',tag:true,ovl:false}};
+try{const s=JSON.parse(localStorage.getItem('scaleExplorer')||'null');if(s&&Array.isArray(s.rows))st=Object.assign(st,s)}catch(e){}
+const save=()=>{try{localStorage.setItem('scaleExplorer',JSON.stringify(st))}catch(e){}};
+
+const accStr=a=>a>0?'♯'.repeat(a):'♭'.repeat(-a);
+// Spell with one letter per degree, picking the root spelling with the fewest accidentals
+function spell(rootPc,sc){
+  let best=null;
+  for(let L=0;L<7;L++){
+    const ra=((rootPc-LPC[L]+18)%12)-6;if(Math.abs(ra)>1)continue;
+    const names=sc.iv.map((iv,i)=>{const li=(L+sc.lt[i])%7,pc=(rootPc+iv)%12,a=((pc-LPC[li]+18)%12)-6;return LET[li]+accStr(a)});
+    const score=names.reduce((s,n)=>{const a=n.length-1;return s+a+(a>1?10:0)},0);
+    if(!best||score<best.score||(score===best.score&&ra<0&&[3,8,10].includes(rootPc)))best={score,names};
+  }
+  return best.names;
+}
+const degLabels=sc=>sc.iv.map((iv,i)=>i===0?'R':accStr(iv-MAJ[sc.lt[i]])+(sc.lt[i]+1));
+const keyName=(pc,scKey)=>spell(pc,SCALES[scKey])[0];
+
+function scaleMidi(r){const sc=SCALES[r.sc],pcs=new Set(sc.iv.map(i=>(r.key+i)%12)),out=[];for(let m=20;m<=130;m++)if(pcs.has(m%12))out.push(m);return out}
+function boxAt(r,s){
+  const sc=scaleMidi(r),per=SCALES[r.sc].iv.length===5?2:3;let idx=sc.indexOf(40+s);const notes=[];
+  if(idx<0)return notes;
+  for(let k=5;k>=0;k--)for(let j=0;j<per;j++)notes.push([k,sc[idx++]-OPEN[k]]);
+  return notes;
+}
+function shapeNotes(r,b){
+  const N=st.frets,iv=SCALES[r.sc].iv,set=new Set(),ranges=[];
+  const f0=((r.key+iv[b])%12-4+12)%12,total=iv.length===5?12:18;
+  for(const o of [-12,0,12,24]){
+    const notes=boxAt(r,f0+o).filter(([k,f])=>f>=0&&f<=N);
+    if(notes.length<total/2)continue;
+    notes.forEach(([k,f])=>set.add(k+'-'+f));
+    const fs=notes.map(n=>n[1]);ranges.push([Math.min(...fs),Math.max(...fs)]);
+  }
+  return {set,ranges};
+}
+const steps=(iv,b)=>iv.map((_,i)=>(iv[(b+i+1)%iv.length]-iv[(b+i)%iv.length]+12)%12).join(',');
+// Which shape of row r has the same fingering as shape b of row 1?
+function matchShape(r,b){
+  const a=SCALES[st.rows[0].sc].iv,c=SCALES[r.sc].iv;
+  if(a.length!==c.length)return -1;
+  const target=steps(a,b);
+  for(let i=0;i<c.length;i++)if(steps(c,i)===target)return i;
+  return -1;
+}
+
+function draw(svg,r,ri,b){
+  const N=st.frets,VW=74+N*44,L=62,W=(VW-L-12)/N,Y=i=>26+i*30,X=f=>f===0?40:L+(f-0.5)*W;
+  svg.setAttribute('viewBox',`0 0 ${VW} ${Y(5)+40}`);svg.style.width=VW+'px';svg.dataset.focus='';
+  const sc=SCALES[r.sc],names=spell(r.key,sc),degs=degLabels(sc);
+  const sh=b<0?null:shapeNotes(r,b);
+  const ref=new Set(SCALES[st.rows[0].sc].iv.map(i=>(st.rows[0].key+i)%12));
+  let s='';
+  [3,5,7,9,15,17,19,21].filter(f=>f<=N).forEach(f=>s+=`<circle cx="${X(f)}" cy="${Y(2.5)}" r="5" fill="var(--inlay)"/>`);
+  [12,24].filter(f=>f<=N).forEach(f=>s+=`<circle cx="${X(f)}" cy="${Y(1.5)}" r="5" fill="var(--inlay)"/><circle cx="${X(f)}" cy="${Y(3.5)}" r="5" fill="var(--inlay)"/>`);
+  for(let f=0;f<=N;f++){const x=L+f*W;s+=`<line x1="${x}" x2="${x}" y1="${Y(0)}" y2="${Y(5)}" stroke="var(--line)" stroke-width="${f?1:4}"/>`}
+  for(let i=0;i<6;i++){
+    s+=`<line x1="${L}" x2="${L+N*W}" y1="${Y(i)}" y2="${Y(i)}" stroke="var(--line)" stroke-width="${0.7+i*0.3}"/>`;
+    s+=`<text x="12" y="${Y(i)}" dy="0.35em" font-size="13" fill="var(--muted)">${SN[i]}</text>`;
+  }
+  [3,5,7,9,12,15,17,19,21,24].filter(f=>f<=N).forEach(f=>s+=`<text x="${X(f)}" y="${Y(5)+30}" text-anchor="middle" font-size="13" fill="var(--muted)">${f}</text>`);
+  for(let i=0;i<6;i++)for(let f=0;f<=N;f++){
+    const pc=(OPEN[i]+f)%12,d=sc.iv.indexOf((pc-r.key+12)%12);if(d<0)continue;
+    const dim=sh&&!sh.set.has(i+'-'+f),t=st.lbl==='n'?names[d]:degs[d];
+    const ring=st.diff&&ri>0&&!ref.has(pc)?`<circle cx="${X(f)}" cy="${Y(i)}" r="15" fill="none" stroke="var(--fg)" stroke-width="2" stroke-dasharray="3 2.5"/>`:'';
+    s+=`<g class="dot" opacity="${dim?0.12:1}">${ring}<circle cx="${X(f)}" cy="${Y(i)}" r="12" fill="${d===0?'var(--root)':ROWCOL[ri]}"/>`+
+       `<text x="${X(f)}" y="${Y(i)}" dy="0.35em" text-anchor="middle" font-size="${t.length>1?11:12.5}" font-weight="600" fill="#fff">${t}</text></g>`;
+  }
+  if(sh&&sh.ranges.length)svg.dataset.focus=sh.ranges[0][0]<=0?0:L+(sh.ranges[0][0]-1)*W;
+  svg.innerHTML=s;
+  return sh;
+}
+
+function scaleOptions(cur){
+  const groups={};for(const k in SCALES)(groups[SCALES[k].grp]=groups[SCALES[k].grp]||[]).push(k);
+  return Object.entries(groups).map(([g,ks])=>`<optgroup label="${g}">`+ks.map(k=>`<option value="${k}"${k===cur?' selected':''}>${SCALES[k].name}</option>`).join('')+'</optgroup>').join('');
+}
+function relInfo(r){
+  const sc=SCALES[r.sc];
+  if(r.sc==='majp'){const p=(r.key+9)%12;return 'relative minor: '+keyName(p,'minp')+'m'}
+  if(r.sc==='minp'){const p=(r.key+3)%12;return 'relative major: '+keyName(p,'majp')}
+  if(sc.mode>0){const p=(r.key-MAJ[sc.mode]+12)%12;return `mode ${sc.mode+1} of ${keyName(p,'m0')} major`}
+  if(sc.mode===0){const p=(r.key+9)%12;return 'relative minor: '+keyName(p,'m5')+'m'}
+  return '';
+}
+
+function render(){
+  group('tabs',[['scales','Scales'],['triads','Triads']],st.tab,v=>st.tab=v);
+  document.getElementById('tab-scales').style.display=st.tab==='scales'?'':'none';
+  document.getElementById('tab-triads').style.display=st.tab==='triads'?'':'none';
+  if(st.tab==='triads')renderTriads();else renderScales();
+  syncScroll();
+}
+// Keep every fretboard on the page scrolled to the same spot; jump to a shape when one is picked
+let scrollX=0,lastFocus=null;
+function syncScroll(){
+  const sc=[...document.getElementById('tab-'+st.tab).querySelectorAll('.scroller')];
+  const t=st.tri,key=st.tab==='scales'?['s',st.shape,st.mode,st.rows.map(r=>r.key+r.sc).join()].join():['t',t.caged,t.chord,t.key,t.sc].join();
+  const f=sc.map(e=>e.querySelector('svg').dataset.focus).find(v=>v!=='');
+  if(key!==lastFocus&&f!==undefined)scrollX=Math.max(0,+f-30);
+  lastFocus=key;
+  sc.forEach(e=>{e.scrollLeft=scrollX;e.onscroll=()=>{scrollX=e.scrollLeft;sc.forEach(o=>{if(o!==e&&o.scrollLeft!==scrollX)o.scrollLeft=scrollX})}});
+}
+
+// ---------- Triads ----------
+const TCOL=['var(--root)','#185FA5','#0F6E56'];
+const SETS=[[2,1,0],[3,2,1],[4,3,2],[5,4,3]], SETNAMES=['G B e','D G B','A D G','E A D'];
+const ROMAN=['I','II','III','IV','V','VI','VII'];
+const QUAL={'4,7':['','maj',''],'3,7':['m','min',''],'3,6':['°','dim','°'],'4,8':['+','aug','+']};
+
+function diatonic(t){
+  const sc=SCALES[t.sc],names=spell(t.key,sc),iv=sc.iv;
+  return iv.map((r,d)=>{
+    const third=(iv[(d+2)%7]-r+12)%12,fifth=(iv[(d+4)%7]-r+12)%12,q=QUAL[third+','+fifth]||['?','?',''];
+    const up=third===4,num=ROMAN[d];
+    return {d,name:names[d]+q[0],quality:q[1],
+      roman:accStr(r-MAJ[d])+(up?num:num.toLowerCase())+q[2],
+      pcs:[(t.key+r)%12,(t.key+iv[(d+2)%7])%12,(t.key+iv[(d+4)%7])%12],
+      names:[names[d],names[(d+2)%7],names[(d+4)%7]],
+      degs:['R',third===3?'♭3':'3',fifth===6?'♭5':fifth===8?'♯5':'5']};
+  });
+}
+// Close-voiced triads: lowest string gets a chord tone, each higher string gets the next chord tone up
+// CAGED forms: each open chord shape covers a fret window; moved up the neck it covers the same window shifted
+const CAGED=[['C',0,3],['A',9,2],['G',7,3],['E',4,2],['D',2,3]];
+function cagedWindows(rootPc,shape){
+  const [,r,span]=CAGED.find(c=>c[0]===shape),o=(rootPc-r+12)%12;
+  return [-12,0,12,24].map(x=>[o+x,o+x+span]).filter(([a,b])=>b>=0);
+}
+function cagedOf(rootPc,notes){
+  const fs=notes.map(n=>n[1]);let best=0,hits=[];
+  for(const [sh] of CAGED){
+    let m=0;for(const [a,b] of cagedWindows(rootPc,sh))m=Math.max(m,fs.filter(f=>f>=a&&f<=b).length);
+    if(m>best){best=m;hits=[sh]}else if(m===best)hits.push(sh);
+  }
+  return hits;
+}
+function triadVoicings(pcs,N){
+  const out=[];
+  SETS.forEach((strs,si)=>{
+    for(let f=0;f<=N;f++){
+      let p=OPEN[strs[0]]+f,ti=pcs.indexOf(p%12);if(ti<0)continue;
+      const inv=ti,notes=[[strs[0],f,ti]];let ok=true;
+      for(let j=1;j<3;j++){
+        ti=(ti+1)%3;let q=p+1;while(q%12!==pcs[ti])q++;
+        const ff=q-OPEN[strs[j]];if(ff<0||ff>N){ok=false;break}
+        notes.push([strs[j],ff,ti]);p=q;
+      }
+      if(ok)out.push({set:si,inv,notes,caged:cagedOf(pcs[0],notes)});
+    }
+  });
+  return out;
+}
+const IVN=['R','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7'];
+function drawTriad(svg,ch,t){
+  const sc=SCALES[t.sc],sNames=spell(t.key,sc);
+  const N=st.frets,VW=74+N*44,L=62,W=(VW-L-12)/N,Y=i=>48+i*30,X=f=>f===0?40:L+(f-0.5)*W;
+  svg.setAttribute('viewBox',`0 0 ${VW} ${Y(5)+40}`);svg.style.width=VW+'px';svg.dataset.focus='';
+  let s='';
+  [3,5,7,9,15,17,19,21].filter(f=>f<=N).forEach(f=>s+=`<circle cx="${X(f)}" cy="${Y(2.5)}" r="5" fill="var(--inlay)"/>`);
+  [12,24].filter(f=>f<=N).forEach(f=>s+=`<circle cx="${X(f)}" cy="${Y(1.5)}" r="5" fill="var(--inlay)"/><circle cx="${X(f)}" cy="${Y(3.5)}" r="5" fill="var(--inlay)"/>`);
+  for(let f=0;f<=N;f++){const x=L+f*W;s+=`<line x1="${x}" x2="${x}" y1="${Y(0)}" y2="${Y(5)}" stroke="var(--line)" stroke-width="${f?1:4}"/>`}
+  for(let i=0;i<6;i++){
+    s+=`<line x1="${L}" x2="${L+N*W}" y1="${Y(i)}" y2="${Y(i)}" stroke="var(--line)" stroke-width="${0.7+i*0.3}"/>`;
+    s+=`<text x="12" y="${Y(i)}" dy="0.35em" font-size="13" fill="var(--muted)">${SN[i]}</text>`;
+  }
+  [3,5,7,9,12,15,17,19,21,24].filter(f=>f<=N).forEach(f=>s+=`<text x="${X(f)}" y="${Y(5)+30}" text-anchor="middle" font-size="13" fill="var(--muted)">${f}</text>`);
+  const vs=triadVoicings(ch.pcs,N).filter(v=>(t.set<0||v.set===t.set)&&(t.inv<0||v.inv===t.inv)&&(!t.caged||v.caged.includes(t.caged)));
+  if(t.caged)cagedWindows(ch.pcs[0],t.caged).forEach(([a,b])=>{
+    if(a>N)return;const x1=a<=0?26:L+(a-1)*W,x2=L+Math.min(b,N)*W;
+    s=`<rect x="${x1}" y="${Y(0)-16}" width="${x2-x1}" height="${Y(5)-Y(0)+32}" rx="8" fill="var(--accent-bg)"/><text x="${(x1+x2)/2}" y="${Y(0)-23}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--accent)">${t.caged} shape</text>`+s;
+  });
+  const used=new Map();
+  vs.forEach(v=>{
+    s+=`<polyline points="${v.notes.map(([k,f])=>X(f)+','+Y(k)).join(' ')}" fill="none" stroke="var(--line)" stroke-width="3" stroke-linejoin="round" opacity=".55"/>`;
+    v.notes.forEach(([k,f,ti])=>used.set(k+'-'+f,ti));
+  });
+  for(let i=0;i<6;i++)for(let f=0;f<=N;f++){
+    const pc=(OPEN[i]+f)%12,ti=ch.pcs.indexOf(pc);
+    if(ti<0){
+      const si=t.ovl?sc.iv.indexOf((pc-t.key+12)%12):-1;if(si<0)continue;
+      const lab=t.lbl==='n'?sNames[si]:IVN[(pc-ch.pcs[0]+12)%12];
+      s+=`<circle cx="${X(f)}" cy="${Y(i)}" r="10" fill="#F2C230"/><text x="${X(f)}" y="${Y(i)}" dy="0.35em" text-anchor="middle" font-size="${lab.length>1?10:11}" font-weight="600" fill="#412402">${lab}</text>`;
+      continue;
+    }
+    const t2=t.lbl==='n'?ch.names[ti]:ch.degs[ti];
+    if(used.has(i+'-'+f))
+      s+=`<circle cx="${X(f)}" cy="${Y(i)}" r="12" fill="${TCOL[ti]}"/><text x="${X(f)}" y="${Y(i)}" dy="0.35em" text-anchor="middle" font-size="${t2.length>1?11:12.5}" font-weight="600" fill="#fff">${t2}</text>`;
+    else
+      s+=`<circle cx="${X(f)}" cy="${Y(i)}" r="7" fill="var(--inlay)" stroke="var(--line)" stroke-width="1"/>`;
+  }
+  const INV=['root','1st','2nd'];
+  if(t.tag)vs.forEach(v=>{
+    const fs=v.notes.map(n=>n[1]),txt=v.caged.join('/')+' shape · '+INV[v.inv],w=txt.length*6.3+12,y=Y(v.notes[1][0]);
+    let x=X(Math.max(...fs))+17;if(x+w>VW-4)x=X(Math.min(...fs))-17-w;
+    s+=`<g><title>${ch.name}: ${v.caged.join(' or ')} shape, ${SETNAMES[v.set]} strings, ${['root position','1st inversion','2nd inversion'][v.inv]}</title><rect x="${x}" y="${y-10}" width="${w}" height="20" rx="6" fill="var(--card)" stroke="var(--line)" stroke-width="1"/><text x="${x+w/2}" y="${y}" dy="0.35em" text-anchor="middle" font-size="11" fill="var(--fg)">${txt}</text></g>`;
+  });
+  if(t.caged){const ws=cagedWindows(ch.pcs[0],t.caged),w=ws.find(([a])=>a>=0&&a<=N)||ws[0];if(w)svg.dataset.focus=w[0]<=0?0:L+(w[0]-1)*W}
+  svg.innerHTML=s;
+  return vs.length;
+}
+function renderTriads(){
+  const t=st.tri;
+  if(!SCALES[t.sc]||SCALES[t.sc].iv.length!==7)t.sc='m0';
+  const chords=diatonic(t);
+  group('tkeys',KEYS.map((n,i)=>[i,n]),t.key,v=>t.key=v);
+  const sel=document.getElementById('tscale');
+  const groups={};for(const k in SCALES)if(SCALES[k].iv.length===7)(groups[SCALES[k].grp]=groups[SCALES[k].grp]||[]).push(k);
+  sel.innerHTML=Object.entries(groups).map(([g,ks])=>`<optgroup label="${g}">`+ks.map(k=>`<option value="${k}"${k===t.sc?' selected':''}>${SCALES[k].name}</option>`).join('')+'</optgroup>').join('');
+  sel.onchange=e=>{t.sc=e.target.value;render()};
+  group('tchords',[[-1,'All<small>stacked</small>'],...chords.map(c=>[c.d,`${c.name}<small>${c.roman}</small>`])],t.chord,v=>t.chord=v);
+  group('tsets',[[-1,'All'],...SETNAMES.map((n,i)=>[i,n])],t.set,v=>t.set=v);
+  group('tinvs',[[-1,'All'],[0,'Root position'],[1,'1st inversion'],[2,'2nd inversion']],t.inv,v=>t.inv=v);
+  group('tcaged',[['','All'],...CAGED.map(c=>[c[0],c[0]+' shape'])],t.caged,v=>t.caged=v);
+  group('ttags',[[true,'On'],[false,'Off']],t.tag,v=>t.tag=v);
+  group('tovl',[[false,'Off'],[true,'Show the rest of the scale']],t.ovl,v=>t.ovl=v);
+  group('tlbls',[['n','Notes'],['i','Chord tones']],t.lbl,v=>t.lbl=v);
+  group('tfretsel',[[15,'15'],[22,'22'],[24,'24']],st.frets,v=>st.frets=v);
+  const list=t.chord<0?chords:[chords[t.chord]];
+  const wrap=document.getElementById('triboards');
+  wrap.innerHTML=list.map(c=>`<div class="panel"><div class="hd"><b>${c.name}</b><span class="info">${c.roman} · ${c.quality} · ${c.names.join(' ')} · ${c.degs.join(' ')}</span><span class="info cnt"></span></div><div class="scroller"><svg class="board" role="img" aria-label="${c.name} triads"></svg></div></div>`).join('');
+  wrap.querySelectorAll('.panel').forEach((p,i)=>{
+    const n=drawTriad(p.querySelector('svg'),list[i],t);
+    p.querySelector('.cnt').textContent='· '+n+' shape'+(n===1?'':'s');
+  });
+  save();
+}
+
+// ---------- Scales ----------
+function renderScales(){
+  const wrap=document.getElementById('rows');
+  wrap.innerHTML=st.rows.map((r,ri)=>`<div class="panel" data-ri="${ri}">
+    <div class="hd"><span class="chip" style="background:${ROWCOL[ri]}"></span>
+      <select class="k">${KEYS.map((k,i)=>`<option value="${i}"${i===r.key?' selected':''}>${k}</option>`).join('')}</select>
+      <select class="s">${scaleOptions(r.sc)}</select>
+      <b class="t"></b><span class="info n"></span>
+      ${st.rows.length>1?'<button class="rm" title="Remove row">Remove</button>':''}
+    </div>
+    <div class="hd"><span class="info sh"></span></div>
+    <div class="scroller"><svg class="board" role="img" aria-label="Fretboard"></svg></div></div>`).join('');
+  const maxShapes=Math.max(...st.rows.map(r=>SCALES[r.sc].iv.length));
+  if(st.shape>=maxShapes)st.shape=-1;
+  const fmt=x=>x.ranges.length?'frets '+x.ranges.map(([a,b])=>a+'–'+b).join(', '):'off the neck';
+  wrap.querySelectorAll('.panel').forEach(p=>{
+    const ri=+p.dataset.ri,r=st.rows[ri],sc=SCALES[r.sc],names=spell(r.key,sc);
+    let b=-1,msg='';
+    if(st.shape>=0){
+      if(st.mode==='pos'||ri===0){b=st.shape<sc.iv.length?st.shape:-1;if(b<0)msg=`${sc.name} has only ${sc.iv.length} shapes`}
+      else{b=matchShape(r,st.shape);if(b<0)msg='No shape here has the same fingering as row 1 shape '+(st.shape+1)}
+    }
+    const sh=draw(p.querySelector('svg'),r,ri,b);
+    p.querySelector('.t').textContent=names[0]+' '+(sc.mode>0&&sc.mode!==5?sc.name:sc.name[0].toLowerCase()+sc.name.slice(1));
+    const rel=relInfo(r);
+    p.querySelector('.n').textContent=names.join(' ')+' · '+degLabels(sc).join(' ')+(rel?' · '+rel:'');
+    p.querySelector('.sh').textContent=sh?`Shape ${b+1}: ${fmt(sh)}`+(st.mode==='pat'&&ri>0?` (same fingering as row 1 shape ${st.shape+1})`:''):msg;
+    p.querySelector('.k').onchange=e=>{r.key=+e.target.value;render()};
+    p.querySelector('.s').onchange=e=>{r.sc=e.target.value;render()};
+    const rm=p.querySelector('.rm');if(rm)rm.onclick=()=>{st.rows.splice(ri,1);render()};
+  });
+  const add=document.getElementById('add');
+  add.disabled=st.rows.length>=3;add.textContent=st.rows.length>=3?'Maximum of 3 rows':'+ Add a scale row';
+  buttons(maxShapes);save();
+}
+document.getElementById('add').onclick=()=>{if(st.rows.length<3){const last=st.rows[st.rows.length-1];st.rows.push({key:last.key,sc:'m0'});render()}};
+
+function group(id,items,cur,set){
+  document.getElementById(id).innerHTML=items.map(([v,t],i)=>`<button data-i="${i}" class="${v===cur?'on':''}">${t}</button>`).join(' ');
+  document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{set(items[+b.dataset.i][0]);render()});
+}
+function buttons(maxShapes){
+  const allKey=st.rows.every(r=>r.key===st.rows[0].key)?st.rows[0].key:-1;
+  group('keys',KEYS.map((n,i)=>[i,n]),allKey,v=>st.rows.forEach(r=>r.key=v));
+  group('shapes',[[-1,'All notes'],...Array.from({length:maxShapes},(_,n)=>[n,'Shape '+(n+1)])],st.shape,v=>st.shape=v);
+  group('modes',[['pos','Same number'],['pat','Same fingering as row 1']],st.mode,v=>st.mode=v);
+  group('lbls',[['n','Notes'],['i','Intervals']],st.lbl,v=>st.lbl=v);
+  group('diff',[[false,'Off'],[true,'Mark notes not in row 1']],st.diff,v=>st.diff=v);
+  group('fretsel',[[15,'15'],[22,'22'],[24,'24']],st.frets,v=>st.frets=v);
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey||e.target.tagName==='SELECT')return;
+  if(st.tab==='triads'){
+    const t=st.tri,k=e.key.toLowerCase();
+    if(e.key==='ArrowRight')t.key=(t.key+1)%12;
+    else if(e.key==='ArrowLeft')t.key=(t.key+11)%12;
+    else if(/^[0-7]$/.test(e.key))t.chord=+e.key-1;
+    else if(k==='s')t.set=t.set>=3?-1:t.set+1;
+    else if(k==='i')t.inv=t.inv>=2?-1:t.inv+1;
+    else if(k==='c'){const o=['','C','A','G','E','D'];t.caged=o[(o.indexOf(t.caged)+1)%6]}
+    else if(k==='t')t.tag=!t.tag;
+    else if(k==='o')t.ovl=!t.ovl;
+    else if(k==='l')t.lbl=t.lbl==='n'?'i':'n';
+    else return;
+    e.preventDefault();render();return;
+  }
+  if(e.key==='ArrowRight')st.rows.forEach(r=>r.key=(r.key+1)%12);
+  else if(e.key==='ArrowLeft')st.rows.forEach(r=>r.key=(r.key+11)%12);
+  else if(/^[0-7]$/.test(e.key))st.shape=+e.key-1;
+  else if(e.key.toLowerCase()==='l')st.lbl=st.lbl==='n'?'i':'n';
+  else if(e.key.toLowerCase()==='m')st.mode=st.mode==='pos'?'pat':'pos';
+  else if(e.key.toLowerCase()==='d')st.diff=!st.diff;
+  else return;
+  e.preventDefault();render();
+});
+render();
+</script>
+</body>
+</html>
